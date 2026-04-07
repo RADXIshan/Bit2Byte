@@ -58,7 +58,7 @@ export default function App() {
     
     if (!isLocalhost && file.size > SERVER_LIMIT) {
       setJobStatus('failed');
-      setErrorMsg(`File too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Maximum allowed on production is 4.5MB.`);
+      setErrorMsg(`File too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Maximum allowed is 4.5MB.`);
       return;
     }
     
