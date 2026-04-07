@@ -74,48 +74,60 @@ export default function OutputViewer({ result, options }) {
     URL.revokeObjectURL(url);
   };
 
-  const renderContentToCanvas = async (contentStr, targetCanvas = null) => {
-    // 1. Pre-process content to find the bounding box (actual pixels)
-    const allLines = contentStr.split(/\r?\n|\\n/);
-    // Strip HTML tags for measurement and trim trailing whitespace
-    const strippedLines = allLines.map(line => 
-      line.replace(/<[^>]*>?/gm, '').replace(/\s+$/, '')
-    );
+  const renderContentToCanvas = async (contentStr, targetCanvas = null, preCalculated = null) => {
+    let firstLine, lastLine, minLeadingSpaces, columns, rows, finalStrippedLines, verticalTrimmedRaw;
 
-    // Find first and last non-empty lines (Vertical crop)
-    let firstLine = 0;
-    while (firstLine < strippedLines.length && strippedLines[firstLine].trim().length === 0) {
-      firstLine++;
-    }
-    let lastLine = strippedLines.length - 1;
-    while (lastLine > firstLine && strippedLines[lastLine].trim().length === 0) {
-      lastLine--;
-    }
+    if (preCalculated) {
+      ({ firstLine, lastLine, minLeadingSpaces, columns, rows } = preCalculated);
+      const allLines = contentStr.split(/\r?\n|\\n/);
+      verticalTrimmedRaw = allLines.slice(firstLine, lastLine + 1);
+      const verticalTrimmedStripped = verticalTrimmedRaw.map(line => 
+        line.replace(/<[^>]*>?/gm, '').replace(/\s+$/, '')
+      );
+      finalStrippedLines = verticalTrimmedStripped.map(l => l.slice(minLeadingSpaces));
+    } else {
+      // 1. Pre-process content to find the bounding box (actual pixels)
+      const allLines = contentStr.split(/\r?\n|\\n/);
+      // Strip HTML tags for measurement and trim trailing whitespace
+      const strippedLines = allLines.map(line => 
+        line.replace(/<[^>]*>?/gm, '').replace(/\s+$/, '')
+      );
 
-    if (firstLine > lastLine) { // Empty input or only whitespace
+      // Find first and last non-empty lines (Vertical crop)
       firstLine = 0;
-      lastLine = 0;
-    }
-
-    const verticalTrimmedStripped = strippedLines.slice(firstLine, lastLine + 1);
-    const verticalTrimmedRaw = allLines.slice(firstLine, lastLine + 1);
-    
-    // Find minimum leading whitespace across all non-empty lines (Horizontal crop)
-    let minLeadingSpaces = Infinity;
-    verticalTrimmedStripped.forEach(line => {
-      if (line.trim().length > 0) {
-        const leading = line.match(/^(\s*)/)[0].length;
-        if (leading < minLeadingSpaces) minLeadingSpaces = leading;
+      while (firstLine < strippedLines.length && strippedLines[firstLine].trim().length === 0) {
+        firstLine++;
       }
-    });
-    if (minLeadingSpaces === Infinity) minLeadingSpaces = 0;
+      lastLine = strippedLines.length - 1;
+      while (lastLine > firstLine && strippedLines[lastLine].trim().length === 0) {
+        lastLine--;
+      }
 
-    // Final lines for measurement and plain drawing
-    const finalStrippedLines = verticalTrimmedStripped.map(l => l.slice(minLeadingSpaces));
-    
-    // Find absolute max width from trimmed lines
-    const columns = Math.max(1, ...finalStrippedLines.map(l => l.length));
-    const rows = finalStrippedLines.length;
+      if (firstLine > lastLine) { // Empty input or only whitespace
+        firstLine = 0;
+        lastLine = 0;
+      }
+
+      const verticalTrimmedStripped = strippedLines.slice(firstLine, lastLine + 1);
+      verticalTrimmedRaw = allLines.slice(firstLine, lastLine + 1);
+      
+      // Find minimum leading whitespace across all non-empty lines (Horizontal crop)
+      minLeadingSpaces = Infinity;
+      verticalTrimmedStripped.forEach(line => {
+        if (line.trim().length > 0) {
+          const leading = line.match(/^(\s*)/)[0].length;
+          if (leading < minLeadingSpaces) minLeadingSpaces = leading;
+        }
+      });
+      if (minLeadingSpaces === Infinity) minLeadingSpaces = 0;
+
+      // Final lines for measurement and plain drawing
+      finalStrippedLines = verticalTrimmedStripped.map(l => l.slice(minLeadingSpaces));
+      
+      // Find absolute max width from trimmed lines
+      columns = Math.max(1, ...finalStrippedLines.map(l => l.length));
+      rows = finalStrippedLines.length;
+    }
 
     // 2. Setup Canvas
     const metadata = result.metadata || {};
@@ -175,13 +187,13 @@ export default function OutputViewer({ result, options }) {
       }
     }
     
-    return canvas;
+    return { canvas, boundingBox: { firstLine, lastLine, minLeadingSpaces, columns, rows } };
   };
 
   const downloadImage = async () => {
     setIsRendering(true);
     try {
-      const canvas = await renderContentToCanvas(currentContent);
+      const { canvas } = await renderContentToCanvas(currentContent);
       const dataUrl = canvas.toDataURL('image/png');
       const a = document.createElement('a');
       a.href = dataUrl;
@@ -198,8 +210,9 @@ export default function OutputViewer({ result, options }) {
     setIsRendering(true);
 
     try {
-      // Create a template canvas to get the dimensions right
-      const firstFrameCanvas = await renderContentToCanvas(result.frames[0]);
+      // 1. Get dimensions from first frame and cache the bounding box
+      const { canvas: firstFrameCanvas, boundingBox } = await renderContentToCanvas(result.frames[0]);
+      
       const canvas = document.createElement('canvas');
       canvas.width = firstFrameCanvas.width;
       canvas.height = firstFrameCanvas.height;
@@ -207,33 +220,51 @@ export default function OutputViewer({ result, options }) {
       const ctx = canvas.getContext('2d');
       const fps = options.fps || 6;
       
-      // We need to capture the stream from the canvas
-      const stream = canvas.captureStream(fps);
-      const mimeType = 'video/webm';
-      const recorder = new MediaRecorder(stream, { mimeType });
+      // 2. Setup high-quality MediaRecorder
+      // Manual frame capture mode (captureStream(0))
+      const stream = canvas.captureStream(0); 
+      const videoTrack = stream.getVideoTracks()[0];
+      
+      // Try to find the best supported mime type
+      const mimeTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm'
+      ];
+      const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || 'video/webm';
+      
+      const recorder = new MediaRecorder(stream, { 
+        mimeType,
+        videoBitsPerSecond: 8000000 // 8 Mbps for high quality
+      });
+      
       const chunks = [];
-
       recorder.ondataavailable = e => {
         if (e.data.size > 0) chunks.push(e.data);
       };
 
       recorder.start();
 
-      // Render each frame to the main canvas
+      // 3. Render all frames
       for (let i = 0; i < result.frames.length; i++) {
-        // We render to an offscreen canvas first to get the cropping/filtering right
-        // Then we draw it to our recording canvas
-        const frameCanvas = await renderContentToCanvas(result.frames[i]);
+        // Use pre-calculated bounding box for speed and consistency
+        const { canvas: frameCanvas } = await renderContentToCanvas(result.frames[i], null, boundingBox);
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(frameCanvas, 0, 0);
 
-        if (stream.getVideoTracks().length > 0 && typeof stream.getVideoTracks()[0].requestFrame === 'function') {
-          stream.getVideoTracks()[0].requestFrame(); 
+        // Manually trigger a frame capture
+        if (videoTrack && typeof videoTrack.requestFrame === 'function') {
+          videoTrack.requestFrame(); 
         }
-        await new Promise(r => setTimeout(r, 1000 / fps));
+        
+        // Wait for the encoder to breathe, but shorter than before since we are manual
+        await new Promise(r => setTimeout(r, 1000 / (fps * 2)));
       }
 
+      // Add a small delay at the end to ensure the last frame is encoded
+      await new Promise(r => setTimeout(r, 200));
+      
       recorder.onstop = async () => {
         const webmBlob = new Blob(chunks, { type: 'video/webm' });
         // ... rest of the conversion logic stays the same ...
