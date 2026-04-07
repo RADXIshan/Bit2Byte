@@ -63,7 +63,7 @@ export default function Controls({ onChange, fileType }) {
 
       {/* Charset Selector */}
       <div className="space-y-3">
-        <label className="block text-sm font-black uppercase text-black bg-cyan-200 inline-block px-2 py-1 border-2 border-black -rotate-1 shadow-[2px_2px_0_0_black]">Character Set</label>
+        <label className="inline-block text-sm font-black uppercase text-black bg-cyan-200 px-2 py-1 border-2 border-black -rotate-1 shadow-[2px_2px_0_0_black]">Character Set</label>
         <div className="flex flex-col sm:flex-row gap-4 mt-2">
           <select 
             value={options.charsetType}
@@ -137,7 +137,7 @@ export default function Controls({ onChange, fileType }) {
       {/* Video Specific Controls */}
       {isVideo && (
         <div className="pt-6 mt-4 border-t-4 border-black border-dashed space-y-6">
-          <div className="flex items-center gap-2 mb-2 bg-emerald-200 p-2 border-2 border-black inline-flex shadow-[3px_3px_0_0_black] rotate-1">
+          <div className="inline-flex items-center gap-2 mb-2 bg-emerald-200 p-2 border-2 border-black shadow-[3px_3px_0_0_black] rotate-1">
             <Film className="w-5 h-5 text-black" />
             <h4 className="text-sm font-black uppercase text-black">Video Opts</h4>
           </div>

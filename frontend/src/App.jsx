@@ -9,7 +9,6 @@ import { Sparkles, Terminal } from 'lucide-react';
 export default function App() {
   const [file, setFile] = useState(null);
   const [options, setOptions] = useState({});
-  const [jobId, setJobId] = useState(null);
   const [jobStatus, setJobStatus] = useState('idle'); // idle, uploading, processing, done, failed
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState(null);
@@ -70,7 +69,6 @@ export default function App() {
         }
       });
       
-      setJobId(data.jobId);
       startPolling(data.jobId);
     } catch (err) {
       console.error(err);
@@ -82,7 +80,6 @@ export default function App() {
   const handleClear = () => {
     setFile(null);
     setResult(null);
-    setJobId(null);
     setJobStatus('idle');
     setProgress(0);
     setErrorMsg('');
@@ -91,18 +88,18 @@ export default function App() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
         
         {/* Header */}
-        <header className="flex items-center gap-4 py-4 mb-4 border-b-4 border-black pb-6">
+        <header className="flex flex-col sm:flex-row items-center sm:items-start md:items-center gap-4 py-4 mb-4 border-b-4 border-black pb-6 text-center sm:text-left">
           <div className="p-3 bg-yellow-300 border-4 border-black shadow-[4px_4px_0_0_black] rounded-xl flex items-center justify-center -rotate-3 hover:rotate-3 transition-transform">
             <Terminal className="w-8 h-8 text-black" />
           </div>
           <div>
-            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white [-webkit-text-stroke:2px_black] drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight text-white [-webkit-text-stroke:2px_black] drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{ fontFamily: "'Bangers', cursive", letterSpacing: '0.05em' }}>
               Bit2Byte
             </h1>
-            <p className="text-black font-bold text-lg mt-1 background-white px-2 py-0.5 bg-white border-2 border-black inline-block shadow-[2px_2px_0_0_black]">
+            <p className="text-black font-bold text-sm md:text-lg mt-1 background-white px-2 py-0.5 bg-white border-2 border-black inline-block shadow-[2px_2px_0_0_black]">
               Next-gen ASCII & Binary Art Converter
             </p>
           </div>
@@ -130,10 +127,10 @@ export default function App() {
             <button
               onClick={handleConvert}
               disabled={!file || jobStatus === 'uploading' || jobStatus === 'processing'}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-black text-xl text-black bg-lime-400 border-4 border-black shadow-[6px_6px_0_0_black] transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 hover:shadow-[8px_8px_0_0_black] active:translate-y-1.5 active:translate-x-1.5 active:shadow-none hover:bg-lime-300"
+              className="w-full flex items-center justify-center gap-3 py-4 md:py-6 rounded-xl font-black text-3xl md:text-4xl text-white bg-yellow-300 border-4 border-black shadow-[6px_6px_0_0_black] transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 hover:shadow-[8px_8px_0_0_black] active:translate-y-1.5 active:translate-x-1.5 active:shadow-none hover:bg-yellow-200 -rotate-1 hover:rotate-0 tracking-widest [-webkit-text-stroke:2px_black]"
+              style={{ fontFamily: "'Bangers', cursive" }}
             >
-              <Sparkles className="w-6 h-6" />
-              CONVERT NOW
+              CONVERT NOW!
             </button>
           </div>
 
