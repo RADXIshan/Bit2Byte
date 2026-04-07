@@ -118,12 +118,12 @@ export default function Controls({ onChange, fileType }) {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-3 pt-4">
         {/* Color Mode Toggle */}
-        <label className={`relative flex items-center justify-between p-4 border-4 rounded cursor-pointer transition-all ${options.color ? 'border-black bg-indigo-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
-          <div className="flex items-center gap-2">
-            <ImageIcon className={`w-6 h-6 ${options.color ? 'text-indigo-900' : 'text-black'}`} />
-            <span className="text-sm font-black uppercase text-black">ANSI Color</span>
+        <label className={`relative flex items-center justify-between p-3 border-4 rounded cursor-pointer transition-all ${options.color ? 'border-black bg-indigo-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 pr-2">
+            <ImageIcon className={`w-5 h-5 shrink-0 ${options.color ? 'text-indigo-900' : 'text-black'}`} />
+            <span className="text-xs sm:text-sm font-black uppercase text-black leading-tight wrap-break-word">ANSI Color</span>
           </div>
           <input 
             type="checkbox" 
@@ -131,13 +131,13 @@ export default function Controls({ onChange, fileType }) {
             onChange={(e) => updateOption('color', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="relative w-12 h-6 border-2 border-black bg-white peer-focus:outline-none rounded peer peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-black after:border-black after:border-2 after:rounded-sm after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-yellow-300"></div>
+          <div className="relative shrink-0 w-12 h-6 border-2 border-black bg-white peer-focus:outline-none rounded peer peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-black after:border-black after:border-2 after:rounded-sm after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-yellow-300"></div>
         </label>
 
         {/* Invert Toggle */}
-        <label className={`relative flex items-center justify-between p-4 border-4 rounded cursor-pointer transition-all ${options.invert ? 'border-black bg-pink-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
-          <div className="flex flex-col">
-            <span className="text-sm font-black uppercase text-black">Invert Lum</span>
+        <label className={`relative flex items-center justify-between p-3 border-4 rounded cursor-pointer transition-all ${options.invert ? 'border-black bg-pink-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
+          <div className="flex flex-col flex-1 min-w-0 pr-2">
+            <span className="text-xs sm:text-sm font-black uppercase text-black leading-tight wrap-break-word">Invert Lum</span>
           </div>
           <input 
             type="checkbox" 
@@ -145,7 +145,7 @@ export default function Controls({ onChange, fileType }) {
             onChange={(e) => updateOption('invert', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="relative w-12 h-6 border-2 border-black bg-white peer-focus:outline-none rounded peer peer-checked:bg-pink-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-black after:border-black after:border-2 after:rounded-sm after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-yellow-300"></div>
+          <div className="relative shrink-0 w-12 h-6 border-2 border-black bg-white peer-focus:outline-none rounded peer peer-checked:bg-pink-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-black after:border-black after:border-2 after:rounded-sm after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-yellow-300"></div>
         </label>
       </div>
 

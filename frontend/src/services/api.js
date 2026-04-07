@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://bit2byte-server.vercel.app' : 'http://localhost:3001');
 
 export async function submitJob(file, options, onUploadProgress) {
   const form = new FormData();
