@@ -6,10 +6,13 @@ export async function imageToAscii(filePath, options) {
   let image = sharp(filePath);
   const meta = await image.metadata();
 
-  // Correct for character aspect ratio (chars are ~2x taller than wide)
-  const height = Math.max(1, Math.round((meta.height / meta.width) * width * 0.43));
+  // Correct for character aspect ratio
+  const height = Math.max(1, Math.round((meta.height / meta.width) * width * 0.45));
 
-  image = image.resize(width, height);
+  image = image
+    .resize({ width, height, fastShrinkOnLoad: true, kernel: sharp.kernel.lanczos3 })
+    .normalize()
+    .modulate({ saturation: 1.2, brightness: 1.05 });
 
   // Apply filters
   if (imageFilter === 'Sharpen') {
@@ -42,7 +45,7 @@ export async function imageToAscii(filePath, options) {
       .toBuffer({ resolveWithObject: true });
 
     const channels = info.channels || 3;
-    let html = '';
+    let htmlArray = [];
     
     for (let i = 0; i < data.length; i += channels) {
       const r = data[i];
@@ -55,17 +58,19 @@ export async function imageToAscii(filePath, options) {
       if (invert) idx = charset.length - 1 - idx;
       idx = Math.max(0, Math.min(charset.length - 1, idx));
       
-      const char = charset[idx] === ' ' ? '&nbsp;' : charset[idx];
-      html += `<span style="color:rgb(${r},${g},${b})">${char}</span>`;
+      if (charset[idx] === ' ') {
+        htmlArray.push('&nbsp;');
+      } else {
+        htmlArray.push(`<span style="color:rgb(${r},${g},${b})">${charset[idx]}</span>`);
+      }
       
-      if ((i / channels + 1) % width === 0) html += '\n';
+      if ((i / channels + 1) % width === 0) htmlArray.push('\n');
     }
-    return { type: 'html', content: html };
+    return { type: 'html', content: htmlArray.join('') };
   } else {
     const { data } = await image
       .flatten({ background: '#000000' })
       .greyscale()
-      .normalize()
       .raw()
       .toBuffer({ resolveWithObject: true });
 

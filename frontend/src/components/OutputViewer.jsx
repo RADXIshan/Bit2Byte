@@ -1,10 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Download, Play, Pause, SkipBack, SkipForward, Check, Video } from 'lucide-react';
+import { Copy, Download, Play, Pause, SkipBack, SkipForward, Check, Video, Image as ImageIcon, Filter } from 'lucide-react';
+
+const POST_FILTERS = {
+  'Normal': 'none',
+  'Sepia': 'sepia(1)',
+  'Matrix': 'hue-rotate(120deg) saturate(2) brightness(1.2)',
+  'Cyberpunk': 'hue-rotate(270deg) contrast(1.5)',
+  'Synthwave': 'hue-rotate(270deg) saturate(2)',
+  'Vintage': 'contrast(1.2) sepia(0.5) brightness(0.9)',
+  'Invert': 'invert(1)'
+};
 
 export default function OutputViewer({ result, options }) {
   const [fontSize, setFontSize] = useState(7);
   const [copied, setCopied] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
+  const [postFilter, setPostFilter] = useState('none');
   
   // Video frame state
   const isVideo = result.frames && result.frames.length > 0;
@@ -47,24 +58,73 @@ export default function OutputViewer({ result, options }) {
     URL.revokeObjectURL(url);
   };
 
-  const downloadHtml = () => {
-    const htmlContent = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>ASCII Art</title>
-<style>
-  body { background: #000; display: flex; justify-content: center; padding: 2rem; margin: 0; min-height: 100vh; }
-  pre { font-family: monospace; line-height: 1; font-size: ${fontSize}px; padding: 1rem; }
-</style>
-</head><body>
-<pre>${currentContent}</pre>
-</body></html>`;
+  const renderContentToCanvas = async (contentStr) => {
+    const canvas = document.createElement('canvas');
+    const strippedSample = contentStr.replace(/<[^>]*>?/gm, '');
+    const columns = Math.max(10, strippedSample.split('\\n')[0].length);
+    const rows = strippedSample.split('\\n').length;
+    
+    const charW = fontSize * 0.6;
+    const charH = fontSize;
+    canvas.width = Math.max(100, Math.floor(columns * charW) + 40);
+    canvas.height = Math.max(100, Math.floor(rows * charH) + 40);
 
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `art-${Date.now()}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const ctx = canvas.getContext('2d');
+    
+    return new Promise((resolve) => {
+      ctx.filter = postFilter !== 'none' ? postFilter : 'none';
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (isHtml) {
+        const safeContent = contentStr.replace(/&nbsp;/g, '&#160;');
+        const svg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+            <foreignObject width="100%" height="100%">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; line-height: 1; font-size: ${fontSize}px; padding: 20px; color: #fff; background: transparent; margin: 0; white-space: pre; box-sizing: border-box;">
+                ${safeContent}
+              </div>
+            </foreignObject>
+          </svg>
+        `;
+        const img = new Image();
+        const safeSvg = svg.replace(/#/g, '%23').replace(/\\n/g, '');
+        const url = 'data:image/svg+xml;charset=utf-8,' + safeSvg;
+        
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas);
+        };
+        img.onerror = () => {
+          resolve(canvas); 
+        };
+        img.src = url;
+      } else {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = `${fontSize}px monospace`;
+        ctx.textBaseline = 'top';
+        const lines = contentStr.split('\\n');
+        for (let i = 0; i < lines.length; i++) {
+          ctx.fillText(lines[i], 20, 20 + i * charH);
+        }
+        resolve(canvas);
+      }
+    });
+  };
+
+  const downloadImage = async () => {
+    setIsRendering(true);
+    try {
+      const canvas = await renderContentToCanvas(currentContent);
+      const dataUrl = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `art-${Date.now()}.png`;
+      a.click();
+    } catch (err) {
+      console.error(err);
+    }
+    setIsRendering(false);
   };
 
   const downloadVideo = async () => {
@@ -97,50 +157,11 @@ export default function OutputViewer({ result, options }) {
 
       recorder.start();
 
-      const renderFrame = (idx) => {
-        return new Promise((resolve) => {
-          const content = result.frames[idx];
-          ctx.fillStyle = '#000000';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-          if (isHtml) {
-            const safeContent = content.replace(/&nbsp;/g, '&#160;');
-            const svg = `
-              <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
-                <foreignObject width="100%" height="100%">
-                  <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; line-height: 1; font-size: ${fontSize}px; padding: 20px; color: #fff; background: #000; margin: 0; white-space: pre; box-sizing: border-box;">
-                    ${safeContent}
-                  </div>
-                </foreignObject>
-              </svg>
-            `;
-            const img = new Image();
-            const safeSvg = svg.replace(/#/g, '%23').replace(/\\n/g, ''); // minor encoding just in case
-            const url = 'data:image/svg+xml;charset=utf-8,' + safeSvg;
-            
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0);
-              resolve();
-            };
-            img.onerror = () => {
-              resolve(); 
-            };
-            img.src = url;
-          } else {
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = `${fontSize}px monospace`;
-            ctx.textBaseline = 'top';
-            const lines = content.split('\\n');
-            for (let i = 0; i < lines.length; i++) {
-              ctx.fillText(lines[i], 20, 20 + i * charH);
-            }
-            resolve();
-          }
-        });
-      };
-
       for (let i = 0; i < result.frames.length; i++) {
-        await renderFrame(i);
+        const frameCanvas = await renderContentToCanvas(result.frames[i]);
+        // Actually rendering logic overrides original canvas, so we need to just draw to main canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(frameCanvas, 0, 0);
         // Request a frame explicitly for browsers that need it
         if (stream.getVideoTracks().length > 0 && typeof stream.getVideoTracks()[0].requestFrame === 'function') {
           stream.getVideoTracks()[0].requestFrame(); 
@@ -217,10 +238,16 @@ export default function OutputViewer({ result, options }) {
               <Download className="w-4 h-4" /> TXT
             </button>
             <button 
-              onClick={downloadHtml} 
-              className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none"
+              onClick={downloadImage} 
+              disabled={isRendering}
+              className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
             >
-              <Download className="w-4 h-4" /> HTML
+              {isRendering && !isVideo ? (
+                <span className="w-4 h-4 inline-block border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+              ) : (
+                <ImageIcon className="w-4 h-4" />
+              )}
+              {isRendering && !isVideo ? 'Saving...' : 'PNG'}
             </button>
             {isVideo && (
               <button 
@@ -240,8 +267,26 @@ export default function OutputViewer({ result, options }) {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between p-4 border-b-4 border-black bg-violet-200 gap-4" style={{ backgroundColor: '#ddd6fe' }}>
+        <div className="flex items-center gap-2">
+          <Filter className="w-5 h-5 text-black hidden sm:block" />
+          <select 
+            value={Object.keys(POST_FILTERS).find(key => POST_FILTERS[key] === postFilter) || 'Normal'}
+            onChange={(e) => setPostFilter(POST_FILTERS[e.target.value])}
+            className="bg-white border-2 border-black text-black font-bold uppercase rounded px-2 py-1 focus:ring-0 focus:outline-none shadow-[2px_2px_0_0_black] active:translate-y-px active:translate-x-px active:shadow-none transition-all cursor-pointer text-sm"
+          >
+            {Object.keys(POST_FILTERS).map((key) => (
+              <option key={key} value={key}>{key} Filter</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Adding an inner border-t if necessary, but the black background separates it well. */}
-      <div className="flex-1 overflow-auto bg-black p-4 md:p-8 flex justify-center items-start ascii-output min-h-[400px]">
+      <div 
+        className="flex-1 overflow-auto bg-black p-4 md:p-8 flex justify-center items-start ascii-output min-h-[400px]"
+        style={{ filter: postFilter !== 'none' ? postFilter : 'none', transition: 'filter 0.3s ease' }}
+      >
         {isHtml ? (
           <pre 
             style={{ fontFamily: 'monospace', lineHeight: 1, fontSize: `${fontSize}px` }} 
