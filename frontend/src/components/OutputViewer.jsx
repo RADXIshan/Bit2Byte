@@ -74,65 +74,104 @@ export default function OutputViewer({ result, options }) {
     URL.revokeObjectURL(url);
   };
 
-  const renderContentToCanvas = async (contentStr) => {
-    const canvas = document.createElement('canvas');
-    
-    // Metadata-driven resolution matching
-    const metadata = result.metadata || {};
-    const strippedSample = contentStr.replace(/<[^>]*>?/gm, '');
-    const sampleLines = strippedSample.split(/\r?\n|\\n/);
-    const columns = Math.max(10, sampleLines[0].length);
-    const rows = sampleLines.length;
+  const renderContentToCanvas = async (contentStr, targetCanvas = null) => {
+    // 1. Pre-process content to find the bounding box (actual pixels)
+    const allLines = contentStr.split(/\r?\n|\\n/);
+    // Strip HTML tags for measurement and trim trailing whitespace
+    const strippedLines = allLines.map(line => 
+      line.replace(/<[^>]*>?/gm, '').replace(/\s+$/, '')
+    );
 
-    // Calculate ideal font size to match original width for high-fidelity export
-    // Monospace chars are roughly 55% as wide as they are tall
+    // Find first and last non-empty lines (Vertical crop)
+    let firstLine = 0;
+    while (firstLine < strippedLines.length && strippedLines[firstLine].trim().length === 0) {
+      firstLine++;
+    }
+    let lastLine = strippedLines.length - 1;
+    while (lastLine > firstLine && strippedLines[lastLine].trim().length === 0) {
+      lastLine--;
+    }
+
+    if (firstLine > lastLine) { // Empty input or only whitespace
+      firstLine = 0;
+      lastLine = 0;
+    }
+
+    const verticalTrimmedStripped = strippedLines.slice(firstLine, lastLine + 1);
+    const verticalTrimmedRaw = allLines.slice(firstLine, lastLine + 1);
+    
+    // Find minimum leading whitespace across all non-empty lines (Horizontal crop)
+    let minLeadingSpaces = Infinity;
+    verticalTrimmedStripped.forEach(line => {
+      if (line.trim().length > 0) {
+        const leading = line.match(/^(\s*)/)[0].length;
+        if (leading < minLeadingSpaces) minLeadingSpaces = leading;
+      }
+    });
+    if (minLeadingSpaces === Infinity) minLeadingSpaces = 0;
+
+    // Final lines for measurement and plain drawing
+    const finalStrippedLines = verticalTrimmedStripped.map(l => l.slice(minLeadingSpaces));
+    
+    // Find absolute max width from trimmed lines
+    const columns = Math.max(1, ...finalStrippedLines.map(l => l.length));
+    const rows = finalStrippedLines.length;
+
+    // 2. Setup Canvas
+    const metadata = result.metadata || {};
     const charAspectRatio = 0.55;
+    // Calculate ideal font size based on original metadata width if possible
     const idealFontSize = metadata.width ? (metadata.width / (columns * charAspectRatio)) : 24;
     const exportFontSize = Math.max(12, Math.floor(idealFontSize));
     const charW = exportFontSize * charAspectRatio;
     const charH = exportFontSize;
     
+    const canvas = targetCanvas || document.createElement('canvas');
     canvas.width = Math.floor(columns * charW);
     canvas.height = Math.floor(rows * charH);
 
-    const ctx = canvas.getContext('2d', { alpha: false });
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext('2d', { alpha: true });
     
-    // Apply user selected post-filters to the canvas
+    // Clear and Apply Filter Early
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (postFilter !== 'none') {
       ctx.filter = postFilter;
     }
 
+    // Draw Background (Filtered)
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // 3. Draw Text
     ctx.textBaseline = 'top';
     ctx.font = `${exportFontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
 
-    if (isHtml) {
-      const htmlLines = contentStr.split(/\r?\n|\\n/);
-      for (let y = 0; y < htmlLines.length; y++) {
-        let xOffset = 0;
-        const line = htmlLines[y];
+    const horizontalOffset = minLeadingSpaces * charW;
+
+    for (let y = 0; y < verticalTrimmedRaw.length; y++) {
+      const line = verticalTrimmedRaw[y];
+      let xOffset = 0;
+
+      if (isHtml) {
         // Match spans with color, &nbsp; or other text
         const regex = /<span style="color:(rgb\(\d+,\d+,\d+\))">([^<]+)<\/span>|(&nbsp;)|([^<>&]+)/g;
         let match;
         while ((match = regex.exec(line)) !== null) {
           if (match[1]) { // Colored span
             ctx.fillStyle = match[1];
-            ctx.fillText(match[2], xOffset, y * charH);
+            ctx.fillText(match[2], xOffset - horizontalOffset, y * charH);
             xOffset += match[2].length * charW;
           } else if (match[3]) { // &nbsp;
             xOffset += charW;
           } else if (match[4]) { // Plain text
             ctx.fillStyle = '#FFFFFF';
-            ctx.fillText(match[4], xOffset, y * charH);
+            ctx.fillText(match[4], xOffset - horizontalOffset, y * charH);
             xOffset += match[4].length * charW;
           }
         }
-      }
-    } else {
-      ctx.fillStyle = '#FFFFFF';
-      for (let i = 0; i < sampleLines.length; i++) {
-        ctx.fillText(sampleLines[i], 0, i * charH);
+      } else {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillText(finalStrippedLines[y], 0, y * charH);
       }
     }
     
@@ -159,6 +198,7 @@ export default function OutputViewer({ result, options }) {
     setIsRendering(true);
 
     try {
+      // Create a template canvas to get the dimensions right
       const firstFrameCanvas = await renderContentToCanvas(result.frames[0]);
       const canvas = document.createElement('canvas');
       canvas.width = firstFrameCanvas.width;
@@ -166,8 +206,9 @@ export default function OutputViewer({ result, options }) {
 
       const ctx = canvas.getContext('2d');
       const fps = options.fps || 6;
+      
+      // We need to capture the stream from the canvas
       const stream = canvas.captureStream(fps);
-      // Ensure we use a widely supported mime type
       const mimeType = 'video/webm';
       const recorder = new MediaRecorder(stream, { mimeType });
       const chunks = [];
@@ -178,12 +219,15 @@ export default function OutputViewer({ result, options }) {
 
       recorder.start();
 
+      // Render each frame to the main canvas
       for (let i = 0; i < result.frames.length; i++) {
+        // We render to an offscreen canvas first to get the cropping/filtering right
+        // Then we draw it to our recording canvas
         const frameCanvas = await renderContentToCanvas(result.frames[i]);
-        // Actually rendering logic overrides original canvas, so we need to just draw to main canvas
+        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(frameCanvas, 0, 0);
-        // Server has a 4.5MB payload limit. Warn the user if they're over it.
+
         if (stream.getVideoTracks().length > 0 && typeof stream.getVideoTracks()[0].requestFrame === 'function') {
           stream.getVideoTracks()[0].requestFrame(); 
         }
@@ -192,6 +236,8 @@ export default function OutputViewer({ result, options }) {
 
       recorder.onstop = async () => {
         const webmBlob = new Blob(chunks, { type: 'video/webm' });
+        // ... rest of the conversion logic stays the same ...
+
         
         // Vercel limit check - only apply if not on localhost
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
