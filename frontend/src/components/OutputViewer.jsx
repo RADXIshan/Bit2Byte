@@ -61,13 +61,15 @@ export default function OutputViewer({ result, options }) {
   const renderContentToCanvas = async (contentStr) => {
     const canvas = document.createElement('canvas');
     const strippedSample = contentStr.replace(/<[^>]*>?/gm, '');
-    const columns = Math.max(10, strippedSample.split('\\n')[0].length);
-    const rows = strippedSample.split('\\n').length;
+    const columns = Math.max(10, strippedSample.split(/\r?\n|\\n/)[0].length);
+    const rows = strippedSample.split(/\r?\n|\\n/).length;
     
-    const charW = fontSize * 0.6;
-    const charH = fontSize;
-    canvas.width = Math.max(100, Math.floor(columns * charW) + 40);
-    canvas.height = Math.max(100, Math.floor(rows * charH) + 40);
+    // Hardcode a high-res font size instead of the physical UI display size for pristine HD exports
+    const exportFontSize = 24;
+    const charW = exportFontSize * 0.6;
+    const charH = exportFontSize;
+    canvas.width = Math.max(100, Math.floor(columns * charW) + exportFontSize * 2);
+    canvas.height = Math.max(100, Math.floor(rows * charH) + exportFontSize * 2);
 
     const ctx = canvas.getContext('2d');
     
@@ -81,14 +83,14 @@ export default function OutputViewer({ result, options }) {
         const svg = `
           <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
             <foreignObject width="100%" height="100%">
-              <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; line-height: 1; font-size: ${fontSize}px; padding: 20px; color: #fff; background: transparent; margin: 0; white-space: pre; box-sizing: border-box;">
+              <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; line-height: 1; font-size: ${exportFontSize}px; padding: ${exportFontSize}px; color: #fff; background: transparent; margin: 0; white-space: pre; box-sizing: border-box;">
                 ${safeContent}
               </div>
             </foreignObject>
           </svg>
         `;
         const img = new Image();
-        const safeSvg = svg.replace(/#/g, '%23').replace(/\\n/g, '');
+        const safeSvg = svg.replace(/#/g, '%23').replace(/\r?\n|\\n/g, '');
         const url = 'data:image/svg+xml;charset=utf-8,' + safeSvg;
         
         img.onload = () => {
@@ -101,11 +103,11 @@ export default function OutputViewer({ result, options }) {
         img.src = url;
       } else {
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = `${fontSize}px monospace`;
+        ctx.font = `${exportFontSize}px monospace`;
         ctx.textBaseline = 'top';
-        const lines = contentStr.split('\\n');
+        const lines = contentStr.split(/\r?\n|\\n/);
         for (let i = 0; i < lines.length; i++) {
-          ctx.fillText(lines[i], 20, 20 + i * charH);
+          ctx.fillText(lines[i], exportFontSize, exportFontSize + i * charH);
         }
         resolve(canvas);
       }
