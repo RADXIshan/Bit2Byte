@@ -51,6 +51,16 @@ export default function App() {
 
   const handleConvert = async () => {
     if (!file) return;
+
+    // Vercel has a 4.5MB payload limit. Apply only when not on localhost.
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const SERVER_LIMIT = 4.5 * 1024 * 1024;
+    
+    if (!isLocalhost && file.size > SERVER_LIMIT) {
+      setJobStatus('failed');
+      setErrorMsg(`File too large (${(file.size / (1024 * 1024)).toFixed(2)}MB). Maximum allowed on production is 4.5MB.`);
+      return;
+    }
     
     setJobStatus('uploading');
     setProgress(0);

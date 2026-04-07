@@ -6,8 +6,8 @@ export async function imageToAscii(filePath, options) {
   let image = sharp(filePath);
   const meta = await image.metadata();
 
-  // Correct for character aspect ratio
-  const height = Math.max(1, Math.round((meta.height / meta.width) * width * 0.45));
+  // Correct for character aspect ratio (Standard monospace proportion is ~0.55)
+  const height = Math.max(1, Math.round((meta.height / meta.width) * width * 0.55));
 
   image = image
     .resize({ width, height, fastShrinkOnLoad: true, kernel: sharp.kernel.lanczos3 })

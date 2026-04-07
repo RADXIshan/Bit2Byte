@@ -53,7 +53,7 @@ export default function UploadZone({ onFileSelect, selectedFile, onClear }) {
               Click to upload or drag & drop
             </p>
             <p className="text-sm font-bold bg-yellow-200 px-3 py-1 border-2 border-black rounded shadow-[2px_2px_0_0_black] mt-2">
-              SVG, PNG, JPG, GIF or MP4, WebM (MAX 50MB)
+              SVG, PNG, JPG, GIF or MP4, WebM (MAX 4MB)
             </p>
           </div>
           {errorProps && (

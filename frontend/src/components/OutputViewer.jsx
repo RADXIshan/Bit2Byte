@@ -85,8 +85,8 @@ export default function OutputViewer({ result, options }) {
     const rows = sampleLines.length;
 
     // Calculate ideal font size to match original width for high-fidelity export
-    // Monospace chars are roughly 60% as wide as they are tall
-    const charAspectRatio = 0.6;
+    // Monospace chars are roughly 55% as wide as they are tall
+    const charAspectRatio = 0.55;
     const idealFontSize = metadata.width ? (metadata.width / (columns * charAspectRatio)) : 24;
     const exportFontSize = Math.max(12, Math.floor(idealFontSize));
     const charW = exportFontSize * charAspectRatio;
@@ -183,22 +183,62 @@ export default function OutputViewer({ result, options }) {
         // Actually rendering logic overrides original canvas, so we need to just draw to main canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(frameCanvas, 0, 0);
-        // Request a frame explicitly for browsers that need it
+        // Server has a 4.5MB payload limit. Warn the user if they're over it.
         if (stream.getVideoTracks().length > 0 && typeof stream.getVideoTracks()[0].requestFrame === 'function') {
           stream.getVideoTracks()[0].requestFrame(); 
         }
         await new Promise(r => setTimeout(r, 1000 / fps));
       }
 
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `art-${Date.now()}.webm`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setIsRendering(false);
+      recorder.onstop = async () => {
+        const webmBlob = new Blob(chunks, { type: 'video/webm' });
+        
+        // Vercel limit check - only apply if not on localhost
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const SERVER_LIMIT = 4.5 * 1024 * 1024;
+        
+        if (!isLocalhost && webmBlob.size > SERVER_LIMIT) {
+          console.warn('WebM too large for server-side MP4 conversion');
+          alert(`Video too large for server-side MP4 conversion (${(webmBlob.size / (1024 * 1024)).toFixed(2)}MB). Maximum allowed is 4.5MB. Downloading raw WebM instead.`);
+          const url = URL.createObjectURL(webmBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `art-${Date.now()}.webm`;
+          a.click();
+          setIsRendering(false);
+          return;
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append('video', webmBlob, 'video.webm');
+
+          // Use the correct API URL (v1/convert/mp4)
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/convert/mp4`, {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!response.ok) throw new Error('Conversion failed');
+
+          const mp4Blob = await response.blob();
+          const url = URL.createObjectURL(mp4Blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `art-${Date.now()}.mp4`;
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch (err) {
+          console.error('Video conversion error:', err);
+          alert('Failed to convert video to MP4. Downloading raw WebM instead.');
+          const url = URL.createObjectURL(webmBlob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `art-${Date.now()}.webm`;
+          a.click();
+        } finally {
+          setIsRendering(false);
+        }
       };
       
       recorder.stop();
@@ -291,7 +331,7 @@ export default function OutputViewer({ result, options }) {
                 ) : (
                   <Video className="w-4 h-4" />
                 )}
-                {isRendering ? 'Rendering...' : 'WEBM'}
+                {isRendering ? 'Saving Video...' : 'MP4'}
               </button>
             )}
           </div>
