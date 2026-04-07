@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Download, Play, Pause, SkipBack, SkipForward, Check } from 'lucide-react';
+import { Copy, Download, Play, Pause, SkipBack, SkipForward, Check, Video } from 'lucide-react';
 
 export default function OutputViewer({ result, options }) {
   const [fontSize, setFontSize] = useState(7);
   const [copied, setCopied] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
   
   // Video frame state
   const isVideo = result.frames && result.frames.length > 0;
@@ -66,6 +67,105 @@ export default function OutputViewer({ result, options }) {
     URL.revokeObjectURL(url);
   };
 
+  const downloadVideo = async () => {
+    if (!isVideo || result.frames.length === 0) return;
+    setIsRendering(true);
+
+    try {
+      const canvas = document.createElement('canvas');
+      const sample = result.frames[0];
+      const strippedSample = sample.replace(/<[^>]*>?/gm, '');
+      const columns = Math.max(10, strippedSample.split('\\n')[0].length);
+      const rows = strippedSample.split('\\n').length;
+      
+      const charW = fontSize * 0.6;
+      const charH = fontSize;
+      canvas.width = Math.max(100, Math.floor(columns * charW) + 40);
+      canvas.height = Math.max(100, Math.floor(rows * charH) + 40);
+
+      const ctx = canvas.getContext('2d');
+      const fps = options.fps || 6;
+      const stream = canvas.captureStream(fps);
+      // Ensure we use a widely supported mime type
+      const mimeType = 'video/webm';
+      const recorder = new MediaRecorder(stream, { mimeType });
+      const chunks = [];
+
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.start();
+
+      const renderFrame = (idx) => {
+        return new Promise((resolve) => {
+          const content = result.frames[idx];
+          ctx.fillStyle = '#000000';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          if (isHtml) {
+            const safeContent = content.replace(/&nbsp;/g, '&#160;');
+            const svg = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+                <foreignObject width="100%" height="100%">
+                  <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; line-height: 1; font-size: ${fontSize}px; padding: 20px; color: #fff; background: #000; margin: 0; white-space: pre; box-sizing: border-box;">
+                    ${safeContent}
+                  </div>
+                </foreignObject>
+              </svg>
+            `;
+            const img = new Image();
+            const safeSvg = svg.replace(/#/g, '%23').replace(/\\n/g, ''); // minor encoding just in case
+            const url = 'data:image/svg+xml;charset=utf-8,' + safeSvg;
+            
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0);
+              resolve();
+            };
+            img.onerror = () => {
+              resolve(); 
+            };
+            img.src = url;
+          } else {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `${fontSize}px monospace`;
+            ctx.textBaseline = 'top';
+            const lines = content.split('\\n');
+            for (let i = 0; i < lines.length; i++) {
+              ctx.fillText(lines[i], 20, 20 + i * charH);
+            }
+            resolve();
+          }
+        });
+      };
+
+      for (let i = 0; i < result.frames.length; i++) {
+        await renderFrame(i);
+        // Request a frame explicitly for browsers that need it
+        if (stream.getVideoTracks().length > 0 && typeof stream.getVideoTracks()[0].requestFrame === 'function') {
+          stream.getVideoTracks()[0].requestFrame(); 
+        }
+        await new Promise(r => setTimeout(r, 1000 / fps));
+      }
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `art-${Date.now()}.webm`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setIsRendering(false);
+      };
+      
+      recorder.stop();
+    } catch (err) {
+      console.error(err);
+      setIsRendering(false);
+    }
+  };
+
   return (
     <div className="bg-white border-4 border-black rounded-xl overflow-hidden shadow-[8px_8px_0_0_black] flex flex-col h-full max-h-[80vh]">
       <div className="flex flex-wrap items-center justify-between p-4 border-b-4 border-black bg-pink-100 gap-4">
@@ -122,6 +222,20 @@ export default function OutputViewer({ result, options }) {
             >
               <Download className="w-4 h-4" /> HTML
             </button>
+            {isVideo && (
+              <button 
+                onClick={downloadVideo} 
+                disabled={isRendering}
+                className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-yellow-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-yellow-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
+              >
+                {isRendering ? (
+                  <span className="w-4 h-4 inline-block border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                ) : (
+                  <Video className="w-4 h-4" />
+                )}
+                {isRendering ? 'Rendering...' : 'WEBM'}
+              </button>
+            )}
           </div>
         </div>
       </div>

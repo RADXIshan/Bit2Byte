@@ -96,10 +96,10 @@ export default function App() {
             <Terminal className="w-8 h-8 text-black" />
           </div>
           <div>
-            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight text-white [-webkit-text-stroke:2px_black] drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{ fontFamily: "'Bangers', cursive", letterSpacing: '0.05em' }}>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tight text-gray-100 [-webkit-text-stroke:2px_black] drop-shadow-[4px_4px_0_rgba(0,0,0,1)]" style={{ fontFamily: "'Bangers', cursive", letterSpacing: '0.05em' }}>
               Bit2Byte
             </h1>
-            <p className="text-black font-bold text-sm md:text-lg mt-1 background-white px-2 py-0.5 bg-white border-2 border-black inline-block shadow-[2px_2px_0_0_black]">
+            <p className="text-black font-bold text-sm md:text-lg mt-1 background-white px-2 py-0.5 bg-cyan-200 border-2 border-black inline-block shadow-[2px_2px_0_0_black]">
               Next-gen ASCII & Binary Art Converter
             </p>
           </div>

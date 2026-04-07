@@ -17,6 +17,7 @@ export default function Controls({ onChange, fileType }) {
     width: 60, // Default wider for comic feel, let's keep reasonable size
     invert: false,
     color: false,
+    imageFilter: 'None',
     fps: 6,
     previewFirstFrame: true // Default true for video
   });
@@ -35,14 +36,13 @@ export default function Controls({ onChange, fileType }) {
       charset,
       width: options.width,
       invert: options.invert,
-      color: options.color
+      color: options.color,
+      imageFilter: options.imageFilter
     };
 
     if (isVideo) {
       payload.fps = options.fps;
       payload.previewFirstFrame = options.previewFirstFrame;
-      // Force monochrome for video per instructions ('disabled for video')
-      payload.color = false; 
     }
 
     onChange(payload);
@@ -86,6 +86,22 @@ export default function Controls({ onChange, fileType }) {
         </div>
       </div>
 
+      {/* Image Filter Selector */}
+      <div className="space-y-3 pt-2">
+        <label className="inline-block text-sm font-black uppercase text-black bg-fuchsia-300 px-2 py-1 border-2 border-black rotate-1 shadow-[2px_2px_0_0_black]">Image Filter</label>
+        <div className="flex mt-2">
+          <select 
+            value={options.imageFilter}
+            onChange={(e) => updateOption('imageFilter', e.target.value)}
+            className="flex-1 bg-white border-4 border-black text-black font-bold uppercase rounded p-2 focus:ring-0 focus:outline-none shadow-[4px_4px_0_0_black] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all cursor-pointer"
+          >
+            {['None', 'Sharpen', 'Edge Tracing', 'Sepia', 'Grayscale'].map((key) => (
+              <option key={key} value={key}>{key}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Width Slider */}
       <div className="space-y-3 pt-2">
         <div className="flex justify-between items-center">
@@ -104,15 +120,14 @@ export default function Controls({ onChange, fileType }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
         {/* Color Mode Toggle */}
-        <label className={`relative flex items-center justify-between p-4 border-4 rounded cursor-pointer transition-all ${isVideo ? 'opacity-50 cursor-not-allowed border-black bg-zinc-200 shadow-none' : options.color ? 'border-black bg-indigo-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
+        <label className={`relative flex items-center justify-between p-4 border-4 rounded cursor-pointer transition-all ${options.color ? 'border-black bg-indigo-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
           <div className="flex items-center gap-2">
             <ImageIcon className={`w-6 h-6 ${options.color ? 'text-indigo-900' : 'text-black'}`} />
             <span className="text-sm font-black uppercase text-black">ANSI Color</span>
           </div>
           <input 
             type="checkbox" 
-            checked={isVideo ? false : options.color}
-            disabled={isVideo}
+            checked={options.color}
             onChange={(e) => updateOption('color', e.target.checked)}
             className="sr-only peer"
           />
