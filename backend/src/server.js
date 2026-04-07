@@ -11,7 +11,8 @@ const PORT = process.env.PORT || 3000;
 const Origins = [
     process.env.CLIENT_URL,
     "http://localhost:5173",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://bit-2byte.vercel.app"
 ]
 
 var corsOptions = {
