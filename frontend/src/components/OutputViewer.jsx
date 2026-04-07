@@ -67,21 +67,21 @@ export default function OutputViewer({ result, options }) {
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-xl overflow-hidden shadow-2xl flex flex-col h-full max-h-[80vh]">
-      <div className="flex flex-wrap items-center justify-between p-3 border-b border-zinc-800 bg-zinc-950/50 gap-3">
+    <div className="bg-white border-4 border-black rounded-xl overflow-hidden shadow-[8px_8px_0_0_black] flex flex-col h-full max-h-[80vh]">
+      <div className="flex flex-wrap items-center justify-between p-4 border-b-4 border-black bg-pink-100 gap-4">
         {/* Playback Controls if video */}
         {isVideo ? (
-          <div className="flex items-center gap-2 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-            <button onClick={() => setFrameIndex(Math.max(0, frameIndex - 1))} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded">
-              <SkipBack className="w-4 h-4" />
+          <div className="flex items-center gap-2 bg-yellow-200 border-2 border-black rounded p-1 shadow-[2px_2px_0_0_black]">
+            <button onClick={() => setFrameIndex(Math.max(0, frameIndex - 1))} className="p-1.5 text-black hover:bg-white hover:border-black border-2 border-transparent transition-all rounded active:translate-y-px">
+              <SkipBack className="w-5 h-5" />
             </button>
-            <button onClick={() => setIsPlaying(!isPlaying)} className="p-1.5 text-indigo-400 hover:text-indigo-300 hover:bg-zinc-800 rounded">
-              {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            <button onClick={() => setIsPlaying(!isPlaying)} className="p-2 text-white bg-black border-2 border-black rounded hover:bg-zinc-800 transition-all active:translate-y-px">
+              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
             </button>
-            <button onClick={() => setFrameIndex((frameIndex + 1) % result.frames.length)} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded">
-              <SkipForward className="w-4 h-4" />
+            <button onClick={() => setFrameIndex((frameIndex + 1) % result.frames.length)} className="p-1.5 text-black hover:bg-white hover:border-black border-2 border-transparent transition-all rounded active:translate-y-px">
+              <SkipForward className="w-5 h-5" />
             </button>
-            <span className="text-xs font-mono text-zinc-500 px-2 min-w-[60px] text-center">
+            <span className="text-sm font-black uppercase text-black bg-white border-2 border-black px-2 py-0.5 ml-2 shadow-[1px_1px_0_0_black]">
               {frameIndex + 1} / {result.frames.length}
             </span>
           </div>
@@ -89,33 +89,44 @@ export default function OutputViewer({ result, options }) {
 
         <div className="flex items-center gap-4 flex-wrap">
           {/* Zoom Control */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-400">Aa</span>
+          <div className="flex items-center gap-3 bg-white border-2 border-black px-3 py-2 shadow-[2px_2px_0_0_black]">
+            <span className="text-sm font-black uppercase">Zoom</span>
             <input 
               type="range" min="4" max="20" 
               value={fontSize} 
               onChange={(e) => setFontSize(Number(e.target.value))}
-              className="w-24 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              className="w-24 h-2 bg-orange-200 border-2 border-black rounded appearance-none cursor-pointer accent-black shadow-[1px_1px_0_0_black]"
             />
-            <span className="text-xs text-zinc-400 font-mono">{fontSize}px</span>
+            <span className="text-xs font-black uppercase bg-black text-white px-1 py-0.5">{fontSize}px</span>
           </div>
 
-          <div className="h-4 w-px bg-zinc-800 mx-1"></div>
-
           {/* Action Buttons */}
-          <button onClick={handleCopy} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-          <button onClick={downloadText} disabled={isHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-            <Download className="w-3.5 h-3.5" /> TXT
-          </button>
-          <button onClick={downloadHtml} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-300 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-colors">
-            <Download className="w-3.5 h-3.5" /> HTML
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleCopy} 
+              className={`flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 active:translate-y-1 active:shadow-none ${copied ? 'bg-emerald-300' : 'bg-cyan-300 hover:bg-cyan-200'}`}
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+            <button 
+              onClick={downloadText} 
+              disabled={isHtml} 
+              className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
+            >
+              <Download className="w-4 h-4" /> TXT
+            </button>
+            <button 
+              onClick={downloadHtml} 
+              className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none"
+            >
+              <Download className="w-4 h-4" /> HTML
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* Adding an inner border-t if necessary, but the black background separates it well. */}
       <div className="flex-1 overflow-auto bg-black p-4 md:p-8 flex justify-center items-start ascii-output min-h-[400px]">
         {isHtml ? (
           <pre 

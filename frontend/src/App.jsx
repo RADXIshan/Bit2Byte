@@ -90,27 +90,29 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 md:p-8 font-sans">
+    <div className="min-h-screen p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
-        <header className="flex items-center gap-3 py-4 border-b border-zinc-800">
-          <div className="p-3 bg-indigo-500/10 rounded-xl">
-            <Terminal className="w-8 h-8 text-indigo-400" />
+        <header className="flex items-center gap-4 py-4 mb-4 border-b-4 border-black pb-6">
+          <div className="p-3 bg-yellow-300 border-4 border-black shadow-[4px_4px_0_0_black] rounded-xl flex items-center justify-center -rotate-3 hover:rotate-3 transition-transform">
+            <Terminal className="w-8 h-8 text-black" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-indigo-400 to-emerald-400">
+            <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tight text-white [-webkit-text-stroke:2px_black] drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
               Bit2Byte
             </h1>
-            <p className="text-zinc-400 text-sm">Next-gen ASCII & Binary Art Converter</p>
+            <p className="text-black font-bold text-lg mt-1 background-white px-2 py-0.5 bg-white border-2 border-black inline-block shadow-[2px_2px_0_0_black]">
+              Next-gen ASCII & Binary Art Converter
+            </p>
           </div>
         </header>
 
         <main className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column - Inputs */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 shadow-xl">
+          <div className="lg:col-span-12 xl:col-span-4 space-y-6">
+            <div className="bg-white border-4 border-black rounded-xl p-5 shadow-[8px_8px_0_0_black]">
               <UploadZone 
                 onFileSelect={setFile} 
                 selectedFile={file} 
@@ -118,23 +120,25 @@ export default function App() {
               />
             </div>
 
-            <Controls 
-              onChange={setOptions} 
-              fileType={file?.type} 
-            />
+            <div className="bg-white border-4 border-black rounded-xl p-5 shadow-[8px_8px_0_0_black]">
+              <Controls 
+                onChange={setOptions} 
+                fileType={file?.type} 
+              />
+            </div>
             
             <button
               onClick={handleConvert}
               disabled={!file || jobStatus === 'uploading' || jobStatus === 'processing'}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all bg-linear-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 hover:shadow-[0_0_25px_rgba(99,102,241,0.5)] active:translate-y-0"
+              className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-black text-xl text-black bg-lime-400 border-4 border-black shadow-[6px_6px_0_0_black] transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 hover:shadow-[8px_8px_0_0_black] active:translate-y-1.5 active:translate-x-1.5 active:shadow-none hover:bg-lime-300"
             >
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-6 h-6" />
               CONVERT NOW
             </button>
           </div>
 
           {/* Right Column - Outputs */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
+          <div className="lg:col-span-12 xl:col-span-8 flex flex-col gap-6">
             
             {/* Progress Area */}
             {(jobStatus === 'uploading' || jobStatus === 'processing') && (
@@ -146,18 +150,20 @@ export default function App() {
             
             {/* Error State */}
             {jobStatus === 'failed' && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-6 text-center">
-                <p className="font-semibold mb-1">Conversion Failed</p>
-                <p className="text-sm opacity-80">{errorMsg}</p>
+              <div className="bg-red-200 border-4 border-black text-red-900 rounded-xl p-6 shadow-[8px_8px_0_0_black] font-bold text-center">
+                <p className="text-xl mb-2 flex items-center justify-center gap-2">
+                  <span className="text-2xl">⚠️</span> Conversion Failed
+                </p>
+                <p className="text-sm border-2 border-black bg-white inline-block px-3 py-1 mt-2">{errorMsg}</p>
               </div>
             )}
 
             {/* Empty State */}
             {jobStatus === 'idle' && !result && (
-              <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 rounded-xl bg-zinc-900/50 p-12 text-zinc-500 min-h-[400px]">
-                <Terminal className="w-16 h-16 mb-4 opacity-50" />
-                <p className="text-lg">Awaiting Input</p>
-                <p className="text-sm opacity-70">Upload a file and click convert to see magic happen.</p>
+              <div className="flex-1 flex flex-col items-center justify-center border-4 border-black border-dashed rounded-xl bg-white/50 p-12 text-black min-h-[400px]">
+                <Terminal className="w-20 h-20 mb-6 text-black opacity-30" />
+                <p className="text-3xl font-black uppercase mb-4 text-white [-webkit-text-stroke:2px_black] drop-shadow-[2px_2px_0_rgba(0,0,0,1)]">Awaiting Input</p>
+                <p className="font-bold text-lg bg-yellow-200 px-4 py-2 border-2 border-black shadow-[4px_4px_0_0_black]">Upload a file and click convert to see magic happen.</p>
               </div>
             )}
 

@@ -14,7 +14,7 @@ export default function Controls({ onChange, fileType }) {
   const [options, setOptions] = useState({
     charsetType: 'Binary',
     customCharset: '01 ',
-    width: 120,
+    width: 60, // Default wider for comic feel, let's keep reasonable size
     invert: false,
     color: false,
     fps: 6,
@@ -53,20 +53,22 @@ export default function Controls({ onChange, fileType }) {
   };
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700/50 rounded-xl p-5 shadow-xl space-y-6">
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-4 mb-4">
-        <Settings className="w-5 h-5 text-indigo-400" />
-        <h3 className="text-lg font-medium text-white">Conversion Settings</h3>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 border-b-4 border-black pb-4 mb-6">
+        <div className="p-2 bg-pink-300 border-2 border-black shadow-[2px_2px_0_0_black] rounded -rotate-6">
+          <Settings className="w-6 h-6 text-black" />
+        </div>
+        <h3 className="text-2xl font-black uppercase text-black [-webkit-text-stroke:1px_black]">Settings</h3>
       </div>
 
       {/* Charset Selector */}
       <div className="space-y-3">
-        <label className="text-sm font-medium text-zinc-300">Character Set</label>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <label className="block text-sm font-black uppercase text-black bg-cyan-200 inline-block px-2 py-1 border-2 border-black -rotate-1 shadow-[2px_2px_0_0_black]">Character Set</label>
+        <div className="flex flex-col sm:flex-row gap-4 mt-2">
           <select 
             value={options.charsetType}
             onChange={(e) => updateOption('charsetType', e.target.value)}
-            className="flex-1 bg-zinc-950 border border-zinc-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 transition-all"
+            className="flex-1 bg-white border-4 border-black text-black font-bold uppercase rounded p-2 focus:ring-0 focus:outline-none shadow-[4px_4px_0_0_black] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all cursor-pointer"
           >
             {Object.keys(CHARSETS).map((key) => (
               <option key={key} value={key}>{key}</option>
@@ -77,7 +79,7 @@ export default function Controls({ onChange, fileType }) {
               type="text" 
               value={options.customCharset}
               onChange={(e) => updateOption('customCharset', e.target.value)}
-              className="flex-1 bg-zinc-950 border border-zinc-700 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5 font-mono"
+              className="flex-1 bg-yellow-100 border-4 border-black text-black font-bold text-center rounded p-2 focus:ring-0 focus:outline-none shadow-[4px_4px_0_0_black]"
               placeholder="e.g. .:#@"
             />
           )}
@@ -85,10 +87,10 @@ export default function Controls({ onChange, fileType }) {
       </div>
 
       {/* Width Slider */}
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <label className="text-sm font-medium text-zinc-300">Output Columns (Width)</label>
-          <span className="text-sm font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">{options.width}</span>
+      <div className="space-y-3 pt-2">
+        <div className="flex justify-between items-center">
+          <label className="text-sm font-black uppercase text-black border-b-2 border-black">Output Width</label>
+          <span className="text-lg font-black text-white bg-black px-3 py-1 border-2 border-black rounded rotate-2 shadow-[2px_2px_0_0_#eab308]">{options.width}</span>
         </div>
         <input 
           type="range" 
@@ -96,16 +98,16 @@ export default function Controls({ onChange, fileType }) {
           max="300" 
           value={options.width}
           onChange={(e) => updateOption('width', Number(e.target.value))}
-          className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+          className="w-full h-4 bg-orange-200 rounded border-2 border-black appearance-none cursor-pointer accent-black shadow-[3px_3px_0_0_black] hover:accent-pink-600 transition-colors"
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
         {/* Color Mode Toggle */}
-        <label className={`relative flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${isVideo ? 'opacity-50 cursor-not-allowed border-zinc-800 bg-zinc-950/20' : options.color ? 'border-indigo-500 bg-indigo-500/5' : 'border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800'}`}>
+        <label className={`relative flex items-center justify-between p-4 border-4 rounded cursor-pointer transition-all ${isVideo ? 'opacity-50 cursor-not-allowed border-black bg-zinc-200 shadow-none' : options.color ? 'border-black bg-indigo-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
           <div className="flex items-center gap-2">
-            <ImageIcon className={`w-4 h-4 ${options.color ? 'text-indigo-400' : 'text-zinc-500'}`} />
-            <span className="text-sm font-medium text-zinc-200">ANSI HTML Color</span>
+            <ImageIcon className={`w-6 h-6 ${options.color ? 'text-indigo-900' : 'text-black'}`} />
+            <span className="text-sm font-black uppercase text-black">ANSI Color</span>
           </div>
           <input 
             type="checkbox" 
@@ -114,13 +116,13 @@ export default function Controls({ onChange, fileType }) {
             onChange={(e) => updateOption('color', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="relative w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+          <div className="relative w-12 h-6 border-2 border-black bg-white peer-focus:outline-none rounded peer peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-black after:border-black after:border-2 after:rounded-sm after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-yellow-300"></div>
         </label>
 
         {/* Invert Toggle */}
-        <label className={`relative flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${options.invert ? 'border-indigo-500 bg-indigo-500/5' : 'border-zinc-700 bg-zinc-950/50 hover:bg-zinc-800'}`}>
+        <label className={`relative flex items-center justify-between p-4 border-4 rounded cursor-pointer transition-all ${options.invert ? 'border-black bg-pink-200 shadow-[4px_4px_0_0_black] translate-y-[-2px] translate-x-[-2px]' : 'border-black bg-white hover:bg-gray-50 shadow-[2px_2px_0_0_black]'}`}>
           <div className="flex flex-col">
-            <span className="text-sm font-medium text-zinc-200">Invert Luminance</span>
+            <span className="text-sm font-black uppercase text-black">Invert Lum</span>
           </div>
           <input 
             type="checkbox" 
@@ -128,22 +130,22 @@ export default function Controls({ onChange, fileType }) {
             onChange={(e) => updateOption('invert', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="relative w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:bg-indigo-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
+          <div className="relative w-12 h-6 border-2 border-black bg-white peer-focus:outline-none rounded peer peer-checked:bg-pink-500 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-black after:border-black after:border-2 after:rounded-sm after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full peer-checked:after:bg-yellow-300"></div>
         </label>
       </div>
 
       {/* Video Specific Controls */}
       {isVideo && (
-        <div className="pt-4 mt-4 border-t border-zinc-800 space-y-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Film className="w-4 h-4 text-emerald-400" />
-            <h4 className="text-sm font-medium text-emerald-400">Video Properties</h4>
+        <div className="pt-6 mt-4 border-t-4 border-black border-dashed space-y-6">
+          <div className="flex items-center gap-2 mb-2 bg-emerald-200 p-2 border-2 border-black inline-flex shadow-[3px_3px_0_0_black] rotate-1">
+            <Film className="w-5 h-5 text-black" />
+            <h4 className="text-sm font-black uppercase text-black">Video Opts</h4>
           </div>
           
           <div className="space-y-3">
-            <div className="flex justify-between">
-              <label className="text-sm font-medium text-zinc-300">Frames Per Second (FPS)</label>
-              <span className="text-sm font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">{options.fps}</span>
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-black uppercase text-black">Frames Per Second (FPS)</label>
+              <span className="text-lg font-black text-black bg-emerald-300 px-3 py-1 border-2 border-black rounded shadow-[2px_2px_0_0_black] -rotate-2">{options.fps}</span>
             </div>
             <input 
               type="range" 
@@ -151,20 +153,23 @@ export default function Controls({ onChange, fileType }) {
               max="15" 
               value={options.fps}
               onChange={(e) => updateOption('fps', Number(e.target.value))}
-              className="w-full h-2 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              className="w-full h-4 bg-emerald-100 rounded border-2 border-black appearance-none cursor-pointer accent-black shadow-[3px_3px_0_0_black] hover:accent-emerald-600 transition-colors"
             />
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div className="relative flex items-center">
+          <label className="flex items-start gap-4 cursor-pointer group bg-zinc-100 p-4 border-4 border-black hover:bg-zinc-200 transition-colors shadow-[4px_4px_0_0_black] rounded active:translate-y-1 active:translate-x-1 active:shadow-none">
+            <div className="relative flex items-center mt-1">
               <input 
                 type="checkbox" 
                 checked={options.previewFirstFrame}
                 onChange={(e) => updateOption('previewFirstFrame', e.target.checked)}
-                className="w-4 h-4 rounded bg-zinc-800 border-zinc-700 text-emerald-500 focus:ring-emerald-500/20"
+                className="w-6 h-6 rounded-none bg-white border-2 border-black text-black focus:ring-black accent-black shadow-[2px_2px_0_0_black] cursor-pointer"
               />
             </div>
-            <span className="text-sm text-zinc-300 group-hover:text-zinc-100 transition-colors">Preview first frame only (disables auto-play loop)</span>
+            <div className="flex flex-col">
+              <span className="font-black uppercase text-black">Preview Frame Only</span>
+              <span className="text-xs font-bold text-zinc-600 uppercase">Disables auto-play loop</span>
+            </div>
           </label>
         </div>
       )}
