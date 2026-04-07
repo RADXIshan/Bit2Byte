@@ -76,58 +76,67 @@ export default function OutputViewer({ result, options }) {
 
   const renderContentToCanvas = async (contentStr) => {
     const canvas = document.createElement('canvas');
+    
+    // Metadata-driven resolution matching
+    const metadata = result.metadata || {};
     const strippedSample = contentStr.replace(/<[^>]*>?/gm, '');
-    const columns = Math.max(10, strippedSample.split(/\r?\n|\\n/)[0].length);
-    const rows = strippedSample.split(/\r?\n|\\n/).length;
-    
-    // Hardcode a high-res font size instead of the physical UI display size for pristine HD exports
-    const exportFontSize = 24;
-    const charW = exportFontSize * 0.6;
+    const sampleLines = strippedSample.split(/\r?\n|\\n/);
+    const columns = Math.max(10, sampleLines[0].length);
+    const rows = sampleLines.length;
+
+    // Calculate ideal font size to match original width for high-fidelity export
+    // Monospace chars are roughly 60% as wide as they are tall
+    const charAspectRatio = 0.6;
+    const idealFontSize = metadata.width ? (metadata.width / (columns * charAspectRatio)) : 24;
+    const exportFontSize = Math.max(12, Math.floor(idealFontSize));
+    const charW = exportFontSize * charAspectRatio;
     const charH = exportFontSize;
-    canvas.width = Math.max(100, Math.floor(columns * charW) + exportFontSize * 2);
-    canvas.height = Math.max(100, Math.floor(rows * charH) + exportFontSize * 2);
-
-    const ctx = canvas.getContext('2d');
     
-    return new Promise((resolve) => {
-      ctx.filter = postFilter !== 'none' ? postFilter : 'none';
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    canvas.width = Math.floor(columns * charW);
+    canvas.height = Math.floor(rows * charH);
 
-      if (isHtml) {
-        const safeContent = contentStr.replace(/&nbsp;/g, '&#160;');
-        const svg = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
-            <foreignObject width="100%" height="100%">
-              <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: monospace; line-height: 1; font-size: ${exportFontSize}px; padding: ${exportFontSize}px; color: #fff; background: transparent; margin: 0; white-space: pre; box-sizing: border-box;">
-                ${safeContent}
-              </div>
-            </foreignObject>
-          </svg>
-        `;
-        const img = new Image();
-        const safeSvg = svg.replace(/#/g, '%23').replace(/\r?\n|\\n/g, '');
-        const url = 'data:image/svg+xml;charset=utf-8,' + safeSvg;
-        
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas);
-        };
-        img.onerror = () => {
-          resolve(canvas); 
-        };
-        img.src = url;
-      } else {
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = `${exportFontSize}px monospace`;
-        ctx.textBaseline = 'top';
-        const lines = contentStr.split(/\r?\n|\\n/);
-        for (let i = 0; i < lines.length; i++) {
-          ctx.fillText(lines[i], exportFontSize, exportFontSize + i * charH);
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Apply user selected post-filters to the canvas
+    if (postFilter !== 'none') {
+      ctx.filter = postFilter;
+    }
+
+    ctx.textBaseline = 'top';
+    ctx.font = `${exportFontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+
+    if (isHtml) {
+      const htmlLines = contentStr.split(/\r?\n|\\n/);
+      for (let y = 0; y < htmlLines.length; y++) {
+        let xOffset = 0;
+        const line = htmlLines[y];
+        // Match spans with color, &nbsp; or other text
+        const regex = /<span style="color:(rgb\(\d+,\d+,\d+\))">([^<]+)<\/span>|(&nbsp;)|([^<>&]+)/g;
+        let match;
+        while ((match = regex.exec(line)) !== null) {
+          if (match[1]) { // Colored span
+            ctx.fillStyle = match[1];
+            ctx.fillText(match[2], xOffset, y * charH);
+            xOffset += match[2].length * charW;
+          } else if (match[3]) { // &nbsp;
+            xOffset += charW;
+          } else if (match[4]) { // Plain text
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillText(match[4], xOffset, y * charH);
+            xOffset += match[4].length * charW;
+          }
         }
-        resolve(canvas);
       }
-    });
+    } else {
+      ctx.fillStyle = '#FFFFFF';
+      for (let i = 0; i < sampleLines.length; i++) {
+        ctx.fillText(sampleLines[i], 0, i * charH);
+      }
+    }
+    
+    return canvas;
   };
 
   const downloadImage = async () => {

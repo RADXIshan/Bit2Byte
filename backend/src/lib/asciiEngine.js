@@ -66,7 +66,7 @@ export async function imageToAscii(filePath, options) {
       
       if ((i / channels + 1) % width === 0) htmlArray.push('\n');
     }
-    return { type: 'html', content: htmlArray.join('') };
+    return { type: 'html', content: htmlArray.join(''), metadata: { width: meta.width, height: meta.height } };
   } else {
     const { data } = await image
       .flatten({ background: '#000000' })
@@ -83,6 +83,6 @@ export async function imageToAscii(filePath, options) {
       text += charset[idx];
       if ((i + 1) % width === 0) text += '\n';
     }
-    return { type: 'text', content: text };
+    return { type: 'text', content: text, metadata: { width: meta.width, height: meta.height } };
   }
 }
