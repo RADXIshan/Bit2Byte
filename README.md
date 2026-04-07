@@ -1,7 +1,5 @@
 # Bit2Byte - Next-gen ASCII & Binary Art Converter
 
-![Bit2Byte Header](https://raw.githubusercontent.com/lucide-react/lucide/main/icons/terminal.svg)
-
 Bit2Byte is a high-performance media conversion platform that transforms your images and videos into stunning ASCII and Binary art. Featuring a bold, neo-brutalist design, it provides a seamless experience for creators to "retro-fy" their media.
 
 ## ✨ Features
