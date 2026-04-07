@@ -19,7 +19,8 @@ export default function Controls({ onChange, fileType }) {
     color: false,
     imageFilter: 'None',
     fps: 6,
-    previewFirstFrame: true // Default true for video
+    previewFirstFrame: true, // Default true for video
+    loop: true // Default true for video
   });
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function Controls({ onChange, fileType }) {
     if (isVideo) {
       payload.fps = options.fps;
       payload.previewFirstFrame = options.previewFirstFrame;
+      payload.loop = options.loop;
     }
 
     onChange(payload);
@@ -172,20 +174,37 @@ export default function Controls({ onChange, fileType }) {
             />
           </div>
 
-          <label className="flex items-start gap-4 cursor-pointer group bg-zinc-100 p-4 border-4 border-black hover:bg-zinc-200 transition-colors shadow-[4px_4px_0_0_black] rounded active:translate-y-1 active:translate-x-1 active:shadow-none">
-            <div className="relative flex items-center mt-1">
-              <input 
-                type="checkbox" 
-                checked={options.previewFirstFrame}
-                onChange={(e) => updateOption('previewFirstFrame', e.target.checked)}
-                className="w-6 h-6 rounded-none bg-white border-2 border-black text-black focus:ring-black accent-black shadow-[2px_2px_0_0_black] cursor-pointer"
-              />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black uppercase text-black">Preview Frame Only</span>
-              <span className="text-xs font-bold text-zinc-600 uppercase">Disables auto-play loop</span>
-            </div>
-          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex items-start gap-4 cursor-pointer group bg-zinc-100 p-3 border-4 border-black hover:bg-zinc-200 transition-colors shadow-[4px_4px_0_0_black] rounded active:translate-y-1 active:translate-x-1 active:shadow-none">
+              <div className="relative flex items-center mt-1">
+                <input 
+                  type="checkbox" 
+                  checked={options.previewFirstFrame}
+                  onChange={(e) => updateOption('previewFirstFrame', e.target.checked)}
+                  className="w-5 h-5 rounded-none bg-white border-2 border-black text-black focus:ring-black accent-black shadow-[2px_2px_0_0_black] cursor-pointer"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-black uppercase text-black">Preview Only</span>
+                <span className="text-[10px] font-bold text-zinc-600 uppercase">First frame</span>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-4 cursor-pointer group bg-zinc-100 p-3 border-4 border-black hover:bg-zinc-200 transition-colors shadow-[4px_4px_0_0_black] rounded active:translate-y-1 active:translate-x-1 active:shadow-none">
+              <div className="relative flex items-center mt-1">
+                <input 
+                  type="checkbox" 
+                  checked={options.loop}
+                  onChange={(e) => updateOption('loop', e.target.checked)}
+                  className="w-5 h-5 rounded-none bg-white border-2 border-black text-black focus:ring-black accent-black shadow-[2px_2px_0_0_black] cursor-pointer"
+                />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-black uppercase text-black">Loop Video</span>
+                <span className="text-[10px] font-bold text-zinc-600 uppercase">Repeat always</span>
+              </div>
+            </label>
+          </div>
         </div>
       )}
     </div>

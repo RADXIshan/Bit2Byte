@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Download, Play, Pause, SkipBack, SkipForward, Check, Video, Image as ImageIcon, Filter } from 'lucide-react';
+import { Copy, Download, Play, Pause, SkipBack, SkipForward, Check, Video, Image as ImageIcon, Filter, RotateCcw } from 'lucide-react';
 
 const POST_FILTERS = {
   'Normal': 'none',
@@ -26,16 +26,32 @@ export default function OutputViewer({ result, options }) {
   useEffect(() => {
     if (isVideo && isPlaying) {
       intervalRef.current = setInterval(() => {
-        setFrameIndex((prev) => (prev + 1) % result.frames.length);
+        setFrameIndex((prev) => {
+          const next = prev + 1;
+          if (next >= result.frames.length) {
+            if (options.loop === false) {
+              setIsPlaying(false);
+              return prev;
+            }
+            return 0;
+          }
+          return next;
+        });
       }, 1000 / (options.fps || 6));
     } else {
       clearInterval(intervalRef.current);
     }
     return () => clearInterval(intervalRef.current);
-  }, [isVideo, isPlaying, options.fps, result?.frames?.length]);
+  }, [isVideo, isPlaying, options.fps, options.loop, result?.frames?.length]);
 
   const currentContent = isVideo ? result.frames[frameIndex] : result.content;
   const isHtml = result.type === 'html';
+  const isAtEnd = isVideo && !options.loop && frameIndex === result.frames.length - 1 && !isPlaying;
+
+  const handleRestart = () => {
+    setFrameIndex(0);
+    setIsPlaying(true);
+  };
 
   const handleCopy = async () => {
     // If it's HTML, copy the raw HTML text
@@ -134,16 +150,10 @@ export default function OutputViewer({ result, options }) {
     setIsRendering(true);
 
     try {
+      const firstFrameCanvas = await renderContentToCanvas(result.frames[0]);
       const canvas = document.createElement('canvas');
-      const sample = result.frames[0];
-      const strippedSample = sample.replace(/<[^>]*>?/gm, '');
-      const columns = Math.max(10, strippedSample.split('\\n')[0].length);
-      const rows = strippedSample.split('\\n').length;
-      
-      const charW = fontSize * 0.6;
-      const charH = fontSize;
-      canvas.width = Math.max(100, Math.floor(columns * charW) + 40);
-      canvas.height = Math.max(100, Math.floor(rows * charH) + 40);
+      canvas.width = firstFrameCanvas.width;
+      canvas.height = firstFrameCanvas.height;
 
       const ctx = canvas.getContext('2d');
       const fps = options.fps || 6;
@@ -195,11 +205,17 @@ export default function OutputViewer({ result, options }) {
         {/* Playback Controls if video */}
         {isVideo ? (
           <div className="flex items-center gap-2 bg-yellow-200 border-2 border-black rounded p-1 shadow-[2px_2px_0_0_black]">
+            <button onClick={handleRestart} title="Restart" className="p-1.5 text-black hover:bg-white hover:border-black border-2 border-transparent transition-all rounded active:translate-y-px">
+              <RotateCcw className="w-5 h-5" />
+            </button>
             <button onClick={() => setFrameIndex(Math.max(0, frameIndex - 1))} className="p-1.5 text-black hover:bg-white hover:border-black border-2 border-transparent transition-all rounded active:translate-y-px">
               <SkipBack className="w-5 h-5" />
             </button>
-            <button onClick={() => setIsPlaying(!isPlaying)} className="p-2 text-white bg-black border-2 border-black rounded hover:bg-zinc-800 transition-all active:translate-y-px">
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+            <button 
+              onClick={() => isAtEnd ? handleRestart() : setIsPlaying(!isPlaying)} 
+              className="p-2 text-white bg-black border-2 border-black rounded hover:bg-zinc-800 transition-all active:translate-y-px"
+            >
+              {isAtEnd ? <RotateCcw className="w-5 h-5" /> : (isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />)}
             </button>
             <button onClick={() => setFrameIndex((frameIndex + 1) % result.frames.length)} className="p-1.5 text-black hover:bg-white hover:border-black border-2 border-transparent transition-all rounded active:translate-y-px">
               <SkipForward className="w-5 h-5" />
@@ -232,25 +248,29 @@ export default function OutputViewer({ result, options }) {
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied' : 'Copy'}
             </button>
-            <button 
-              onClick={downloadText} 
-              disabled={isHtml} 
-              className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
-            >
-              <Download className="w-4 h-4" /> TXT
-            </button>
-            <button 
-              onClick={downloadImage} 
-              disabled={isRendering}
-              className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
-            >
-              {isRendering && !isVideo ? (
-                <span className="w-4 h-4 inline-block border-2 border-black border-t-transparent rounded-full animate-spin"></span>
-              ) : (
-                <ImageIcon className="w-4 h-4" />
-              )}
-              {isRendering && !isVideo ? 'Saving...' : 'PNG'}
-            </button>
+            {!isVideo && (
+              <>
+                <button 
+                  onClick={downloadText} 
+                  disabled={isHtml} 
+                  className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
+                >
+                  <Download className="w-4 h-4" /> TXT
+                </button>
+                <button 
+                  onClick={downloadImage} 
+                  disabled={isRendering}
+                  className="flex items-center gap-2 px-4 py-2 font-black uppercase text-black border-2 border-black bg-pink-300 shadow-[3px_3px_0_0_black] transition-all hover:-translate-y-0.5 hover:bg-pink-200 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-1"
+                >
+                  {isRendering && !isVideo ? (
+                    <span className="w-4 h-4 inline-block border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+                  ) : (
+                    <ImageIcon className="w-4 h-4" />
+                  )}
+                  {isRendering && !isVideo ? 'Saving...' : 'PNG'}
+                </button>
+              </>
+            )}
             {isVideo && (
               <button 
                 onClick={downloadVideo} 
@@ -286,9 +306,20 @@ export default function OutputViewer({ result, options }) {
 
       {/* Adding an inner border-t if necessary, but the black background separates it well. */}
       <div 
-        className="flex-1 overflow-auto bg-black p-4 md:p-8 flex justify-center items-start ascii-output min-h-[400px]"
+        className="flex-1 overflow-auto bg-black p-4 md:p-8 flex justify-center items-start ascii-output min-h-[400px] relative"
         style={{ filter: postFilter !== 'none' ? postFilter : 'none', transition: 'filter 0.3s ease' }}
       >
+        {isAtEnd && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all animate-in fade-in duration-300">
+            <button 
+              onClick={handleRestart}
+              className="group flex flex-col items-center gap-4 p-8 bg-yellow-300 border-4 border-black shadow-[8px_8px_0_0_black] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all active:bg-yellow-400"
+            >
+              <RotateCcw className="w-16 h-16 text-black group-hover:rotate-45 transition-transform duration-300" />
+              <span className="text-2xl font-black uppercase text-black tracking-widest">Replay Video</span>
+            </button>
+          </div>
+        )}
         {isHtml ? (
           <pre 
             style={{ fontFamily: 'monospace', lineHeight: 1, fontSize: `${fontSize}px` }} 
