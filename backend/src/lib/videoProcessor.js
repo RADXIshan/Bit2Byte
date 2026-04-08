@@ -1,10 +1,7 @@
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
+import ffmpeg from './ffmpeg.js';
 import { imageToAscii } from './asciiEngine.js';
 import path from 'path';
 import fs from 'fs/promises';
-
-ffmpeg.setFfmpegPath(ffmpegStatic);
 
 export async function videoToAscii(filePath, options, onProgress) {
   const { fps = 6, width = 100, charset, invert, color } = options;
@@ -15,7 +12,7 @@ export async function videoToAscii(filePath, options, onProgress) {
   let originalMetadata = { width: 1280, height: 720 }; // Fallback
   try {
     const probe = await new Promise((resolve, reject) => {
-      ffmpeg.ffprobe(filePath, (err, metadata) => {
+      ffmpeg(filePath).ffprobe((err, metadata) => {
         if (err) reject(err);
         else resolve(metadata);
       });

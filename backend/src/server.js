@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import './lib/ffmpeg.js';
 import 'dotenv/config';
 import convertRouter from './routes/convert.js';
 import jobRouter from './routes/job.js';

@@ -5,11 +5,8 @@ import path from 'path';
 import os from 'os';
 import { createJob } from '../store/jobs.js';
 import { processJob } from '../lib/processJob.js';
-import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
+import ffmpeg from '../lib/ffmpeg.js';
 import fs from 'fs/promises';
-
-ffmpeg.setFfmpegPath(ffmpegStatic);
 
 const router = express.Router();
 
