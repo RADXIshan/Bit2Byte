@@ -11,6 +11,24 @@ export async function videoToAscii(filePath, options, onProgress) {
   const framesDir = filePath + '_frames';
   await fs.mkdir(framesDir, { recursive: true });
 
+  // Get original video dimensions
+  let originalMetadata = { width: 1280, height: 720 }; // Fallback
+  try {
+    const probe = await new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
+        if (err) reject(err);
+        else resolve(metadata);
+      });
+    });
+    const videoStream = probe.streams.find(s => s.codec_type === 'video');
+    if (videoStream) {
+      originalMetadata.width = videoStream.width;
+      originalMetadata.height = videoStream.height;
+    }
+  } catch (err) {
+    console.error('ffprobe error:', err);
+  }
+
   try {
     // Extract frames - limiting to max 60 frames for reliability on serverless
     // If the video is 10 seconds at 6FPS, that's exactly 60 frames.
@@ -44,7 +62,7 @@ export async function videoToAscii(filePath, options, onProgress) {
       onProgress(Math.round((i / totalFrames) * 80) + 15); 
     }
 
-    return { type: color ? 'html' : 'text', frames: asciiFrames };
+    return { type: color ? 'html' : 'text', frames: asciiFrames, metadata: originalMetadata };
   } finally {
     // Ensure cleanup happens even on error
     await fs.rm(framesDir, { recursive: true, force: true }).catch(() => {});

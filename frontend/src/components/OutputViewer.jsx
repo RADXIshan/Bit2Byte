@@ -131,7 +131,7 @@ export default function OutputViewer({ result, options }) {
 
     // 2. Setup Canvas
     const metadata = result.metadata || {};
-    const charAspectRatio = 0.55;
+    const charAspectRatio = 0.6;
     // Calculate ideal font size based on original metadata width if possible
     const idealFontSize = metadata.width ? (metadata.width / (columns * charAspectRatio)) : 24;
     const exportFontSize = Math.max(12, Math.floor(idealFontSize));
@@ -210,8 +210,60 @@ export default function OutputViewer({ result, options }) {
     setIsRendering(true);
 
     try {
-      // 1. Get dimensions from first frame and cache the bounding box
-      const { canvas: firstFrameCanvas, boundingBox } = await renderContentToCanvas(result.frames[0]);
+      // 1. Calculate Global Bounding Box across ALL frames
+      // This ensures we have a tight crop that fits the layout of every frame
+      let global_firstLine = Infinity;
+      let global_lastLine = -Infinity;
+      let global_minLeading = Infinity;
+      let global_maxColumns = 0;
+
+      for (const frame of result.frames) {
+        const lines = frame.split(/\r?\n|\\n/);
+        const strippedLines = lines.map(line => 
+          line.replace(/<[^>]*>?/gm, '').replace(/\s+$/, '')
+        );
+
+        let f = 0;
+        while (f < strippedLines.length && strippedLines[f].trim().length === 0) f++;
+        let l = strippedLines.length - 1;
+        while (l > f && strippedLines[l].trim().length === 0) l--;
+
+        if (f <= l) {
+          global_firstLine = Math.min(global_firstLine, f);
+          global_lastLine = Math.max(global_lastLine, l);
+          
+          const trimmed = strippedLines.slice(f, l + 1);
+          trimmed.forEach(line => {
+            if (line.trim().length > 0) {
+              const leading = line.match(/^(\s*)/)[0].length;
+              if (leading < global_minLeading) global_minLeading = leading;
+              
+              const colCount = line.replace(/^\s*/, '').length;
+              if (colCount > global_maxColumns) global_maxColumns = colCount;
+            }
+          });
+        }
+      }
+
+      // If video is empty, fallback
+      if (global_firstLine === Infinity) {
+        global_firstLine = 0;
+        global_lastLine = 0;
+        global_minLeading = 0;
+        global_maxColumns = 100;
+      }
+
+      // Final bounding box that covers all frames
+      const boundingBox = {
+        firstLine: global_firstLine,
+        lastLine: global_lastLine,
+        minLeadingSpaces: global_minLeading,
+        columns: global_maxColumns,
+        rows: global_lastLine - global_firstLine + 1
+      };
+
+      // 2. Get dimensions for the recording canvas using the global bounding box
+      const { canvas: firstFrameCanvas } = await renderContentToCanvas(result.frames[0], null, boundingBox);
       
       const canvas = document.createElement('canvas');
       canvas.width = firstFrameCanvas.width;
