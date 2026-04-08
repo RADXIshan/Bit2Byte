@@ -77,9 +77,14 @@ router.post('/mp4', upload.single('video'), async (req, res) => {
       '-c:v libx264',
       '-preset fast',
       '-pix_fmt yuv420p',
-      '-movflags +faststart'
+      '-movflags +faststart',
+      '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2'
     ])
     .toFormat('mp4')
+    .on('stderr', (stderrLine) => {
+      // Optional: keep track of stderr for more detail on fail
+      if (stderrLine.includes('Error')) console.error('FFmpeg Stderr:', stderrLine);
+    })
     .on('end', async () => {
       res.download(outputPath, 'video.mp4', async (err) => {
         // Cleanup after download
@@ -87,10 +92,11 @@ router.post('/mp4', upload.single('video'), async (req, res) => {
         await fs.unlink(outputPath).catch(() => {});
       });
     })
-    .on('error', async (err) => {
-      console.error('FFmpeg error:', err);
+    .on('error', async (err, stdout, stderr) => {
+      console.error('FFmpeg error:', err.message);
+      console.error('FFmpeg stderr:', stderr);
       await fs.unlink(inputPath).catch(() => {});
-      res.status(500).json({ error: 'Conversion failed' });
+      res.status(500).json({ error: 'Conversion failed: ' + err.message });
     })
     .save(outputPath);
 });

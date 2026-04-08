@@ -432,7 +432,7 @@ export default function OutputViewer({ result, options }) {
 
       {/* Adding an inner border-t if necessary, but the black background separates it well. */}
       <div 
-        className="flex-1 overflow-auto bg-black p-4 md:p-8 flex justify-center items-start ascii-output min-h-[400px] relative"
+        className="flex-1 overflow-auto bg-black p-4 md:p-8 flex ascii-output min-h-[400px] relative"
         style={{ filter: postFilter !== 'none' ? postFilter : 'none', transition: 'filter 0.3s ease' }}
       >
         {isAtEnd && (
@@ -446,16 +446,23 @@ export default function OutputViewer({ result, options }) {
             </button>
           </div>
         )}
-        {isHtml ? (
-          <pre 
-            style={{ fontFamily: 'monospace', lineHeight: 1, fontSize: `${fontSize}px` }} 
-            dangerouslySetInnerHTML={{ __html: currentContent }}
-          />
-        ) : (
-          <pre style={{ fontFamily: 'monospace', lineHeight: 1, fontSize: `${fontSize}px`, color: '#fff' }}>
-            {currentContent}
-          </pre>
-        )}
+        
+        <div className="m-auto w-fit">
+          {isHtml ? (
+            <pre 
+              className="w-fit"
+              style={{ fontFamily: 'monospace', lineHeight: 1, fontSize: `${fontSize}px` }} 
+              dangerouslySetInnerHTML={{ __html: currentContent }}
+            />
+          ) : (
+            <pre 
+              className="w-fit"
+              style={{ fontFamily: 'monospace', lineHeight: 1, fontSize: `${fontSize}px`, color: '#fff' }}
+            >
+              {currentContent}
+            </pre>
+          )}
+        </div>
       </div>
     </div>
   );
